@@ -4,8 +4,11 @@
 
 #include "engine.h"
 #include "rendering.h"
+#include "obj_loader.h"
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 Camera_t camera;
 Mesh_t   mesh;
@@ -68,7 +71,7 @@ void initMesh() {
 
     };
 
-    // a simple cube
+    // a simple cube by default
     mesh = (Mesh_t) {
         .nFaces  = 12, // 6 faces, 2 triangles per face
         .nPoints = 8,  // 8 vertices
@@ -76,18 +79,31 @@ void initMesh() {
         .points  = points,
     };
 
+    if (modelLoaded) {
+        if (loadObjToMesh(&mesh, &camera, -2, fileName)) {
+            printf(".obj loading failed. Make sure the file is valid\n");
+            exit(1);
+        }
+    }
+
     model = (Model_t) {
         mesh,
         calloc(mesh.nFaces, sizeof(Color))
     };
 
-    model.faceColors[0]  = model.faceColors[1]  = RED;
-    model.faceColors[2]  = model.faceColors[3]  = GREEN;
-    model.faceColors[4]  = model.faceColors[5]  = BLUE;
-    model.faceColors[6]  = model.faceColors[7]  = PURPLE;
-    model.faceColors[8]  = model.faceColors[9]  = YELLOW;
-    model.faceColors[10] = model.faceColors[11] = ORANGE;
-
+    if (!modelLoaded) {
+        printf("No .obj specified, defaulting to cube\n");
+        model.faceColors[0]  = model.faceColors[1]  = RED;
+        model.faceColors[2]  = model.faceColors[3]  = GREEN;
+        model.faceColors[4]  = model.faceColors[5]  = BLUE;
+        model.faceColors[6]  = model.faceColors[7]  = PURPLE;
+        model.faceColors[8]  = model.faceColors[9]  = YELLOW;
+        model.faceColors[10] = model.faceColors[11] = ORANGE;
+    } else {
+        for (int i = 0; i < model.mesh.nFaces; i++) {
+            model.faceColors[i] = WHITE;
+        }
+    }
 }
 
 
@@ -256,6 +272,74 @@ void projectAndDrawModel() {
             if (valid[p1] && valid[p2] && valid[p3]) {
                 plotTriangle(projected[p1], projected[p2], projected[p3], faceColor);
             }
+        }
+    }
+
+
+}
+
+void projectAndDrawModelWithMesh() {
+    Vec2Int_t projected[model.mesh.nPoints];
+    int valid[model.mesh.nPoints];
+
+    for (int i = 0; i < model.mesh.nPoints; i++) {
+        valid[i] = projectVertex(model.mesh.points[i], camera, &projected[i]);
+    }
+
+    Vec3_t normals[model.mesh.nFaces];
+
+    for (int i = 0; i < model.mesh.nFaces; i++) {
+        int32_t p1 = mesh.faces[i].a;
+        int32_t p2 = mesh.faces[i].b;
+        int32_t p3 = mesh.faces[i].c;
+
+        normals[i] = normalize(
+            calculateTriangleNormal(
+                model.mesh.points[p1],
+                model.mesh.points[p2],
+                model.mesh.points[p3])
+            );
+
+        Vec3_t cam2Triangle = {
+            model.mesh.points[p1].x - camera.pos.x,
+            model.mesh.points[p1].y - camera.pos.y,
+            model.mesh.points[p1].z - camera.pos.z
+        };
+
+        float dist = vec3Length(cam2Triangle);
+        uint8_t shade;
+        float distRatio = dist / 100.0f;
+
+        if (distRatio >= 1) {
+            shade = 20;
+        } else {
+            shade = 255 - ((uint8_t) (255.0f * (dist / 100.0f)));
+            if (shade < 20) shade = 20; // clamp, so it's always visible
+        }
+
+        cam2Triangle = normalize(cam2Triangle);
+
+        Color faceColor = model.faceColors[i];
+
+        faceColor.r = (faceColor.r * shade) / 255;
+        faceColor.g = (faceColor.g * shade) / 255;
+        faceColor.b = (faceColor.b * shade) / 255;
+
+        if (dotProduct(cam2Triangle, normals[i]) > 0.0f) {
+            if (valid[p1] && valid[p2] && valid[p3]) {
+                plotTriangle(projected[p1], projected[p2], projected[p3], faceColor);
+            }
+
+            if (valid[p1] && valid[p2]) {
+                plotLine(projected[p1].x, projected[p1].y, projected[p2].x, projected[p2].y, BLACK);
+            }
+            if (valid[p2] && valid[p3]) {
+                plotLine(projected[p2].x, projected[p2].y, projected[p3].x, projected[p3].y, BLACK);
+            }
+            if (valid[p3] && valid[p1]) {
+                plotLine(projected[p3].x, projected[p3].y, projected[p1].x, projected[p1].y, BLACK);
+            }
+
         }
     }
 

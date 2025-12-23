@@ -9,11 +9,12 @@
 #include <stdint.h>
 #include "engine.h"
 
-#define H_RES 800
-#define V_RES 600
+#define H_RES 1280
+#define V_RES 720
 #define SCALE 1
 
 extern Color* frameBuffer;
+extern bool   antiAliasingOn;
 
 void initFrameBuffer();
 void freeFrameBuffer();
@@ -27,5 +28,7 @@ void plotPixel(int32_t x, int32_t y, Color color);
 
 void swap(int32_t *a, int32_t *b);
 void swapVec2Int(Vec2Int_t* a, Vec2Int_t* b);
+
+void antiAliasing();
 
 #endif //PEAENGINE3D_RENDERING_H

@@ -17,6 +17,8 @@ add_executable(peaEngine main.c
         rendering.c
         rendering.h
         engine.c
-        engine.h)
+        engine.h
+        obj_loader.c
+        obj_loader.h)
 
 target_link_libraries(peaEngine PRIVATE raylib)

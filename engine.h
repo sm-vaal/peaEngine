@@ -48,6 +48,7 @@ Vec3_t calculateTriangleNormal(Vec3_t v1, Vec3_t v2, Vec3_t v3);
 void projectAndDrawPts();
 void projectAndDrawWireframe();
 void projectAndDrawModel();
+void projectAndDrawModelWithMesh();
 void pollInput();
 
 Vec3_t getCameraVector();

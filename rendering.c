@@ -8,8 +8,11 @@
 #include <string.h>
 
 Color* frameBuffer;
+Color* antiAliasingFrameBuffer = NULL;
 Texture2D fbTexture;
 Image fbImage;
+
+bool antiAliasingOn = false;
 
 void initFrameBuffer() {
     frameBuffer = (Color*) calloc( H_RES * V_RES, sizeof(Color));
@@ -22,6 +25,11 @@ void initFrameBuffer() {
         .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
     };
 
+    if (antiAliasingOn) {
+        antiAliasingFrameBuffer = (Color*) calloc( H_RES * V_RES, sizeof(Color));
+        fbImage.data = antiAliasingFrameBuffer;
+    }
+
     fbTexture = LoadTextureFromImage(fbImage);
 }
 
@@ -29,11 +37,15 @@ void updateFrameBuffer() {
     ClearBackground(BLACK);
     memset(frameBuffer, 0, H_RES * V_RES * sizeof(Color));
 
-    // projectAndDrawPts();
-    // projectAndDrawWireframe();
-    projectAndDrawModel();
+    projectAndDrawModelWithMesh();
 
-    UpdateTexture(fbTexture, frameBuffer);
+    if (!antiAliasingOn) {
+        UpdateTexture(fbTexture, frameBuffer);
+    } else {
+        antiAliasing();
+        UpdateTexture(fbTexture, antiAliasingFrameBuffer);
+    }
+
 }
 
 void plotFrameBuffer() {
@@ -132,6 +144,9 @@ void plotTriangle(Vec2Int_t v0, Vec2Int_t v1, Vec2Int_t v2, Color color) {
 
 void freeFrameBuffer() {
     free(frameBuffer);
+    if (antiAliasingFrameBuffer != NULL) {
+        free(antiAliasingFrameBuffer);
+    }
 }
 
 void swap(int32_t *a, int32_t *b) {
@@ -144,4 +159,51 @@ void swapVec2Int(Vec2Int_t* a, Vec2Int_t* b) {
     Vec2Int_t t = *a;
     *a = *b;
     *b = t;
+}
+
+// vaseline filter, gaussian blur. KILLS performance
+void antiAliasing() {
+    const static int weights[3][3] = {
+        {1, 1, 1},
+        {1, 10, 1},
+        {1, 1, 1}
+    };
+
+    const static int totalWeight = 18;
+
+    // Handle borders: just copy them (no blur)
+    memcpy(antiAliasingFrameBuffer, frameBuffer,
+           H_RES * V_RES * sizeof(Color));
+
+    for (int y = 1; y < V_RES - 1; y++) {
+        for (int x = 1; x < H_RES - 1; x++) {
+
+            int R = 0;
+            int G = 0;
+            int B = 0;
+
+            for (int ky = 0; ky < 3; ky++) {
+                for (int kx = 0; kx < 3; kx++) {
+
+                    int px = x + kx - 1;
+                    int py = y + ky - 1;
+
+                    Color p = frameBuffer[px + py * H_RES];
+                    int w = weights[ky][kx];
+
+                    R += p.r * w;
+                    G += p.g * w;
+                    B += p.b * w;
+                }
+            }
+
+            Color out;
+            out.r = R / totalWeight;
+            out.g = G / totalWeight;
+            out.b = B / totalWeight;
+            out.a = 255;
+
+            antiAliasingFrameBuffer[x + y * H_RES] = out;
+        }
+    }
 }
