@@ -3,6 +3,7 @@
 //
 
 #include "rendering.h"
+#include "command_parse.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +11,8 @@
 Color* frameBuffer;
 Color* antiAliasingFrameBuffer = NULL;
 Texture2D fbTexture;
-Image fbImage;
+Image  fbImage;
+int    renderMode;
 
 bool antiAliasingOn = false;
 
@@ -37,7 +39,26 @@ void updateFrameBuffer() {
     ClearBackground(BLACK);
     memset(frameBuffer, 0, H_RES * V_RES * sizeof(Color));
 
-    projectAndDrawModelWithMesh();
+    // depends on render mode
+    switch (renderMode) {
+        case POINTS:
+            projectAndDrawPts();
+            break;
+        case WIREFRAME:
+            projectAndDrawWireframe();
+            break;
+        case MODEL_ONLY:
+            projectAndDrawModel();
+            break;
+        case MODEL_MESH:
+            projectAndDrawModelWithMesh();
+            break;
+        case MODEL_SHADING:
+            projectAndDrawModelWithShading();
+            break;
+        default:
+            projectAndDrawModelWithShading();
+    }
 
     if (!antiAliasingOn) {
         UpdateTexture(fbTexture, frameBuffer);

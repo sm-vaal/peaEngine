@@ -5,6 +5,7 @@
 #include "rendering.h"
 #include "obj_loader.h"
 #include "string.h"
+#include "command_parse.h"
 
 int main(int argc, char** argv) {
 
@@ -13,23 +14,21 @@ int main(int argc, char** argv) {
     SetTargetFPS(60);
 
     if (argc == 1) {
-        modelLoaded = false;
         printf("Usage: peaEngine [model.obj] [-a] (-a for antialiasing)\n");
     }
-    else if (argc == 2) {
-        fileName = argv[1];
+
+    parsedCommand_t parsedCommand = parseCommand(argc, argv);
+
+    modelLoaded    = parsedCommand.filename != NULL;
+    fileName       = parsedCommand.filename;
+    if (fileName != NULL) {
         printf("loading model %s\n", fileName);
-        modelLoaded = true;
     }
-    else if (argc == 3) {
-        fileName = argv[1];
-        printf("loading model %s\n", fileName);
-        modelLoaded = true;
-        if (strcmp(argv[2], "-a") == 0) {
-            printf("anti-aliasing on: low performance likely\n");
-            antiAliasingOn = true;
-        }
+    antiAliasingOn = parsedCommand.aliasing;
+    if (antiAliasingOn) {
+        printf("anti-aliasing on: low performance likely\n");
     }
+    renderMode = parsedCommand.renderType;
 
     initFrameBuffer();
     initCamera();

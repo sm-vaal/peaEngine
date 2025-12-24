@@ -274,8 +274,6 @@ void projectAndDrawModel() {
             }
         }
     }
-
-
 }
 
 void projectAndDrawModelWithMesh() {
@@ -345,6 +343,54 @@ void projectAndDrawModelWithMesh() {
 
 
 }
+
+void projectAndDrawModelWithShading() {
+    Vec2Int_t projected[model.mesh.nPoints];
+    int valid[model.mesh.nPoints];
+
+    for (int i = 0; i < model.mesh.nPoints; i++) {
+        valid[i] = projectVertex(model.mesh.points[i], camera, &projected[i]);
+    }
+
+    Vec3_t normals[model.mesh.nFaces];
+
+    for (int i = 0; i < model.mesh.nFaces; i++) {
+        int32_t p1 = mesh.faces[i].a;
+        int32_t p2 = mesh.faces[i].b;
+        int32_t p3 = mesh.faces[i].c;
+
+        normals[i] = normalize(
+            calculateTriangleNormal(
+                model.mesh.points[p1],
+                model.mesh.points[p2],
+                model.mesh.points[p3])
+            );
+
+        Vec3_t cam2Triangle = {
+            model.mesh.points[p1].x - camera.pos.x,
+            model.mesh.points[p1].y - camera.pos.y,
+            model.mesh.points[p1].z - camera.pos.z
+        };
+
+
+        cam2Triangle = normalize(cam2Triangle);
+        float cosAngle = dotProduct(cam2Triangle, normals[i]);
+        uint8_t shade = (uint8_t) ((float) 255 * cosAngle);
+
+        Color faceColor = model.faceColors[i];
+        faceColor.r = (faceColor.r * shade) / 255;
+        faceColor.g = (faceColor.g * shade) / 255;
+        faceColor.b = (faceColor.b * shade) / 255;
+
+
+        if (cosAngle > 0.0f) {
+            if (valid[p1] && valid[p2] && valid[p3]) {
+                plotTriangle(projected[p1], projected[p2], projected[p3], faceColor);
+            }
+        }
+    }
+}
+
 
 
 

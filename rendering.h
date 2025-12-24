@@ -15,6 +15,7 @@
 
 extern Color* frameBuffer;
 extern bool   antiAliasingOn;
+extern int    renderMode;
 
 void initFrameBuffer();
 void freeFrameBuffer();

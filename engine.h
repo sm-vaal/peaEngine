@@ -41,14 +41,18 @@ typedef struct {
     float  pitchRate;
 } Camera_t;
 
+
 void initCamera();
 void initMesh();
 int projectVertex(Vec3_t vertex, Camera_t cam, Vec2Int_t* dest);
 Vec3_t calculateTriangleNormal(Vec3_t v1, Vec3_t v2, Vec3_t v3);
+
 void projectAndDrawPts();
 void projectAndDrawWireframe();
 void projectAndDrawModel();
 void projectAndDrawModelWithMesh();
+void projectAndDrawModelWithShading();
+
 void pollInput();
 
 Vec3_t getCameraVector();
